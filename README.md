@@ -1,6 +1,7 @@
 # deprint
 
 [![Go Reference](https://pkg.go.dev/badge/go.ptx.dk/deprint.svg)](https://pkg.go.dev/go.ptx.dk/deprint)
+![example workflow](https://github.com/ptxmac/deprint/actions/workflows/go.yml/badge.svg)
 
 A small no-dependency library for managing debug print statements in golang projects
 
