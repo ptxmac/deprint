@@ -32,3 +32,24 @@ Output can be controlled by changing the global value `deprint.Output`. Possible
 - `Stdout` prints all statements os.Stdout (default)
 - `Stderr` prints all statements os.Stderr
 - `Disabled` disable all printing
+
+### Controlling deprint from the environment
+
+Calling `deprint.FromEnv` will automatically configure the output based on a selectable environment variable
+
+```go
+package sample
+
+import "go.ptx.dk/deprint"
+
+func init() {
+	deprint.FromEnv("DEBUG", deprint.Disabled)
+}
+```
+
+This will use the value of `DEBUG` to select the output. If `DEBUG` is not set, the 2nd argument will be used instead.
+`DEBUG` can have the following values:
+
+- 0 => Disable
+- 1 => Use stdout
+- 2 => USe stderr

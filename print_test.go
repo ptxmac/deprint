@@ -18,40 +18,102 @@ func ExamplePrintln_disabled() {
 }
 
 func TestPrintln(t *testing.T) {
-	out := captureStdout(t, func() {
+	resetOutput()
+	out, outErr := captureOutput(t, func() {
 		Println("Hello")
 	})
-	expect := "print_test.go:22: Hello\n"
+	expect := "print_test.go:23: Hello\n"
 	if out != expect {
 		t.Errorf("Expected: [%s], got: [%s]", expect, out)
+	}
+	if outErr != "" {
+		t.Errorf("Expected no stderr output, got: %s", outErr)
 	}
 }
 
 func TestPrintln_Disabled(t *testing.T) {
 	Output = Disabled
-	defer func() {
-		Output = Stdout
-	}()
-	out := captureStdout(t, func() {
+	defer resetOutput()
+	out, outErr := captureOutput(t, func() {
 		Println("Hello")
 	})
 	if out != "" {
 		t.Errorf("Expected no output, got: %s", out)
 	}
+	if outErr != "" {
+		t.Errorf("Expected no stderr output, got: %s", outErr)
+	}
 }
 
 func TestPrintln_Stderr(t *testing.T) {
 	Output = Stderr
-	defer func() {
-		Output = Stdout
-	}()
-	out := captureStderr(t, func() {
+	defer resetOutput()
+	out, outErr := captureOutput(t, func() {
 		Println("Hello")
 	})
-	expect := "print_test.go:49: Hello\n"
-	if out != expect {
-		t.Errorf("Expected: [%s], got: [%s]", expect, out)
+	expect := "print_test.go:52: Hello\n"
+	if out != "" {
+		t.Errorf("Expected no output, got: %s", out)
 	}
+	if outErr != expect {
+		t.Errorf("Expected: [%s], got: [%s]", expect, outErr)
+	}
+}
+
+func TestPrintln_fromEnv(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+		out   bool
+		err   bool
+	}{
+		{
+			name:  "disabled",
+			value: "0",
+		},
+		{
+			name:  "stdout",
+			value: "1",
+			out:   true,
+		},
+		{
+			name:  "stderr",
+			value: "2",
+			err:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer withEnv(t, "TEST_DEBUG", tt.value)()
+			defer resetOutput()
+
+			FromEnv("TEST_DEBUG", Stdout)
+
+			out, outErr := captureOutput(t, func() {
+				Println("test fromenv")
+			})
+			expect := "print_test.go:93: test fromenv\n"
+			if tt.out {
+				if out != expect {
+					t.Errorf("Expected: [%s], got: [%s]", expect, out)
+				}
+			} else {
+				if out != "" {
+					t.Errorf("Expected no output, got: %s", out)
+				}
+			}
+			if tt.err {
+				if outErr != expect {
+					t.Errorf("Expected: [%s], got: [%s]", expect, outErr)
+				}
+			} else {
+				if outErr != "" {
+					t.Errorf("Expected no output, got: %s", outErr)
+				}
+			}
+		})
+	}
+
 }
 
 // noError fails the test if err is not nil
@@ -64,32 +126,54 @@ func noError(t *testing.T, err error) {
 
 // Helpers
 
-// captureStdout captures os.Stdout
-func captureStdout(t *testing.T, f func()) string {
-	return captureOutput(t, &os.Stdout, f)
-}
-
-// captureStderr captures os.Stderr
-func captureStderr(t *testing.T, f func()) string {
-	return captureOutput(t, &os.Stderr, f)
-}
-
-// captureOutput replaces target while running f and returns the output as a string
-func captureOutput(t *testing.T, target **os.File, f func()) string {
+// captureOutput replaces os.Std{out,err} while running f and returns the outputs as a strings
+func captureOutput(t *testing.T, f func()) (string, string) {
 	t.Helper()
-	oldStdout := *target
+	oldStdout := os.Stdout
+	oldStderr := os.Stderr
 	defer func() {
-		*target = oldStdout
+		os.Stdout = oldStdout
+		os.Stderr = oldStderr
 	}()
 
-	r, w, err := os.Pipe()
+	or, ow, err := os.Pipe()
+	noError(t, err)
+	er, ew, err := os.Pipe()
 	noError(t, err)
 
-	*target = w
+	os.Stdout = ow
+	os.Stderr = ew
+
 	f()
-	noError(t, w.Close())
-	bs, err := ioutil.ReadAll(r)
+
+	noError(t, ow.Close())
+	noError(t, ew.Close())
+	bsOut, err := ioutil.ReadAll(or)
 	noError(t, err)
-	noError(t, r.Close())
-	return string(bs)
+	bsErr, err := ioutil.ReadAll(er)
+	noError(t, err)
+
+	noError(t, or.Close())
+	noError(t, er.Close())
+
+	return string(bsOut), string(bsErr)
+}
+
+// withEnv sets key=value and returns a function to reset it back
+func withEnv(t *testing.T, key string, value string) func() {
+	t.Helper()
+	old, ok := os.LookupEnv(key)
+	noError(t, os.Setenv(key, value))
+	return func() {
+		if ok {
+			noError(t, os.Setenv(key, old))
+		} else {
+			noError(t, os.Unsetenv(key))
+		}
+	}
+}
+
+// resetOutput sets output the to default value
+func resetOutput() {
+	Output = Stdout
 }
