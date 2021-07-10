@@ -1,0 +1,3 @@
+include:
+  - project: 'ptxmac/build'
+    file: 'build-go.yaml'
