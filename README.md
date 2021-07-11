@@ -2,6 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/go.ptx.dk/deprint.svg)](https://pkg.go.dev/go.ptx.dk/deprint)
 [![Github Workflow](https://github.com/ptxmac/deprint/actions/workflows/go.yml/badge.svg)](https://github.com/ptxmac/deprint/actions/workflows/go.yml)
+[![codecov](https://codecov.io/gh/ptxmac/deprint/branch/master/graph/badge.svg)](https://codecov.io/gh/ptxmac/deprint)
 
 A small no-dependency library for managing debug print statements in golang projects
 

@@ -23,3 +23,11 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+      
+    - name: Cover
+      run: |      
+        go test -race -coverprofile=cover.out -coverpkg=./... -v ./...
+        go tool cover -html=cover.out -o cover.html
+
+    - name: Upload coverage to codecov.io
+      uses: codecov/codecov-action@v1
