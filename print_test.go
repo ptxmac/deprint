@@ -6,23 +6,12 @@ import (
 	"testing"
 )
 
-func ExamplePrintln() {
-	Println("Hello world")
-	// Output: print_test.go:10: Hello world
-}
-
-func ExamplePrintln_disabled() {
-	Output = Disabled
-	Println("Hello world")
-	// Output:
-}
-
 func TestPrintln(t *testing.T) {
 	resetOutput()
 	out, outErr := captureOutput(t, func() {
 		Println("Hello")
 	})
-	expect := "print_test.go:23: Hello\n"
+	expect := "print_test.go:12: Hello\n"
 	if out != expect {
 		t.Errorf("Expected: [%s], got: [%s]", expect, out)
 	}
@@ -51,7 +40,7 @@ func TestPrintln_Stderr(t *testing.T) {
 	out, outErr := captureOutput(t, func() {
 		Println("Hello")
 	})
-	expect := "print_test.go:52: Hello\n"
+	expect := "print_test.go:41: Hello\n"
 	if out != "" {
 		t.Errorf("Expected no output, got: %s", out)
 	}
@@ -92,7 +81,7 @@ func TestPrintln_fromEnv(t *testing.T) {
 			out, outErr := captureOutput(t, func() {
 				Println("test fromenv")
 			})
-			expect := "print_test.go:93: test fromenv\n"
+			expect := "print_test.go:82: test fromenv\n"
 			if tt.out {
 				if out != expect {
 					t.Errorf("Expected: [%s], got: [%s]", expect, out)
@@ -113,7 +102,22 @@ func TestPrintln_fromEnv(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestFromEnv_fallback(t *testing.T) {
+	defer withEnv(t, "TEST_DEBUG", "unknown")()
+	FromEnv("TEST_DEBUG", Stdout)
+
+	out, outErr := captureOutput(t, func() {
+		Println("test from env fallback")
+	})
+	expect := "print_test.go:112: test from env fallback\n"
+	if outErr != "" {
+		t.Errorf("unkexpected stderr output: %q", outErr)
+	}
+	if out != expect {
+		t.Errorf("Expected: [%s], got: [%s]", expect, out)
+	}
 }
 
 // noError fails the test if err is not nil

@@ -27,7 +27,6 @@ const (
 // envName=0 => disable, 1 => stdout, 2 => stderr
 // defaults to fallback if the variable is not set.
 func FromEnv(envName string, fallback OutputType) {
-
 	switch os.Getenv(envName) {
 	case EnvValueDisable:
 		Output = Disabled
